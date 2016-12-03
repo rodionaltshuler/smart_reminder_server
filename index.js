@@ -5,8 +5,9 @@ require('./models')(wagner);
 
 var app = express();
 
-var routes = require('./api')(wagner);
+wagner.invoke(require('./auth'), {app: app});
 
+var routes = require('./api')(wagner);
 app.use('/api/v1', routes);
 
 app.listen(3000);

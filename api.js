@@ -49,12 +49,12 @@ module.exports = function (wagner) {
     //get users list
     //form-url encoded, fields: email, name
     api.get('/users', wagner.invoke(function (User) {
-     return function (req, res) {
-     User.find({}, function (err, users) {
-     res.send(users);
-     });
-     }
-     }));
+        return function (req, res) {
+            User.find({}, function (err, users) {
+                res.send(users);
+            });
+        }
+    }));
 
     //get user by id
     api.get('/users/:user_id', wagner.invoke(function (User) {
