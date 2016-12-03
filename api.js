@@ -26,32 +26,48 @@ module.exports = function (wagner) {
     }));
 
     //create new user
-    api.post('/users', wagner.invoke(function(User) {
-       return function (req, res) {
-           console.log(req.body);
-           var user = new User({ name: req.body.name, email: req.body.email });
-           User.findOne({email: user.email}, function(err, existingUser){
-               //user with this email already exists
-               if (existingUser) {
-                   return res.status(status.CONFLICT).json({error: 'User with e-mail already exists: ' + user.email});
-               }
-               user.save(function(error, user) {
-                   if (error) {
-                       return res.status(status.INTERNAL_SERVER_ERROR).json({error: 'Cannot create user: ' + error.toString()});
-                   }
-                   return res.json({user: user});
-               });
-           });
+    api.post('/users', wagner.invoke(function (User) {
+        return function (req, res) {
+            console.log(req.body);
+            var user = new User({name: req.body.name, email: req.body.email});
+            User.findOne({email: user.email}, function (err, existingUser) {
+                //user with this email already exists
+                if (existingUser) {
+                    return res.status(status.CONFLICT).json({error: 'User with e-mail already exists: ' + user.email});
+                }
+                user.save(function (error, user) {
+                    if (error) {
+                        return res.status(status.INTERNAL_SERVER_ERROR).json({error: 'Cannot create user: ' + error.toString()});
+                    }
+                    return res.json({user: user});
+                });
+            });
 
-       }
+        }
     }));
 
     //get users list
+    //form-url encoded, fields: email, name
     api.get('/users', wagner.invoke(function (User) {
+     return function (req, res) {
+     User.find({}, function (err, users) {
+     res.send(users);
+     });
+     }
+     }));
+
+    //get user by id
+    api.get('/users/:user_id', wagner.invoke(function (User) {
         return function (req, res) {
-            User.find({}, function (err, users) {
-                res.send(users);
+            var id = req.params.user_id;
+            User.findOne({_id: id}, function (err, user) {
+                if (user) {
+                    res.send(user);
+                } else {
+                    return res.status(status.NOT_FOUND).json({error: 'User not found by id ' + id});
+                }
             });
+
         }
     }));
 
