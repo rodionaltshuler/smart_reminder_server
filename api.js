@@ -71,6 +71,17 @@ module.exports = function (wagner) {
         }
     }));
 
+    api.get('/me', function(req, res) {
+        console.log('Session: ' + JSON.stringify(req.session));
+        if (!req.user) {
+            return res.
+            status(status.UNAUTHORIZED).
+            json({ error: 'Not logged in' });
+        }
+        res.send(req.user);
+
+    });
+
     return api;
 
 };
