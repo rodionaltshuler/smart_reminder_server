@@ -1,6 +1,6 @@
 function setupAuth(User, app) {
 
-    var config = require('./config');
+    var config = require('./../config');
 
     var passport = require('passport');
     var FacebookStrategy = require('passport-facebook').Strategy;
@@ -44,7 +44,9 @@ function setupAuth(User, app) {
     ));
 
     app.use(require('express-session')({
-        secret: config.fbSecret
+        secret: config.fbSecret,
+        resave: true,
+        saveUninitialized: true
     }));
 
     app.use(passport.initialize());

@@ -1,14 +1,14 @@
 var express = require('express');
 var wagner = require('wagner-core');
 
-require('./models')(wagner);
+require('./models/models')(wagner);
 
 var app = express();
 
-wagner.invoke(require('./auth'), {app: app});
+wagner.invoke(require('./auth/auth'), {app: app});
 
-var routes = require('./api')(wagner);
-app.use('/api/v1', routes);
+app.use('/api/v1', require('./routes/usersRoute')(wagner));
+app.use('/api/v1', require('./routes/itemListsRoute')(wagner));
 
 app.listen(3000);
 
