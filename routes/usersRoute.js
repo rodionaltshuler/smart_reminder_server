@@ -22,7 +22,7 @@ module.exports = function (wagner) {
                 }
                 user.save(function (error, user) {
                     if (error) {
-                        return res.status(status.INTERNAL_SERVER_ERROR).json({error: 'Cannot create user: ' + error.toString()});
+                        return internalError(res, 'Cannot create user: ' + error.toString());
                     }
                     return res.json({user: user});
                 });
@@ -35,7 +35,13 @@ module.exports = function (wagner) {
     //form-url encoded, fields: email, name
     api.get('/users', wagner.invoke(function (User) {
         return function (req, res) {
+            if (notLoggedIn(req, res)) {
+                return res;
+            }
             User.find({}, function (err, users) {
+                if (err) {
+                    return internalError(res, 'Cannot create user: ' + error.toString());
+                }
                 res.send(users);
             });
         }
@@ -44,8 +50,14 @@ module.exports = function (wagner) {
     //get user by id
     api.get('/users/:user_id', wagner.invoke(function (User) {
         return function (req, res) {
+            if (notLoggedIn(req, res)) {
+                return res;
+            }
             var id = req.params.user_id;
             User.findOne({_id: id}, function (err, user) {
+                if (err) {
+                    return internalError(res, 'Cannot create user: ' + error.toString());
+                }
                 if (user) {
                     res.send(user);
                 } else {
@@ -57,13 +69,23 @@ module.exports = function (wagner) {
     }));
 
     api.get('/me', function (req, res) {
-        console.log('Session: ' + JSON.stringify(req.session));
-        if (!req.user) {
-            return res.status(status.UNAUTHORIZED).json({error: 'Not logged in'});
+        if (notLoggedIn(req, res)) {
+            return res;
         }
         res.send(req.user);
 
     });
+
+    function notLoggedIn(req, res) {
+        if (!req.user) {
+            return res.status(status.UNAUTHORIZED)
+                .json({error: 'Not logged in'});
+        }
+    }
+
+    function internalError(res, message) {
+        return res.status(status.INTERNAL_SERVER_ERROR).json({error: message});
+    }
 
     return api;
 };

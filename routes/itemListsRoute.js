@@ -11,12 +11,11 @@ module.exports = function (wagner) {
     }));
 
     api.post('/itemLists', wagner.invoke(function (ItemList) {
-        return function (req, res) {
+            return function (req, res) {
 
-            if (!req.user) {
-                return res.status(status.UNAUTHORIZED)
-                    .json({error: 'Not logged in'});
-            } else {
+                if (notLoggedIn(req, res)) {
+                    return res;
+                }
 
                 console.log('Creating items list: ' + req.user);
 
@@ -29,30 +28,40 @@ module.exports = function (wagner) {
                     list.collaboratingUsers.push(req.user._id);
                     list.save(function (error, list) {
                         if (error) {
-                            return res.status(status.INTERNAL_SERVER_ERROR).json({error: 'Cannot create itemList: ' + error.toString()});
+                            return internalError(res, 'Cannot create itemList: ' + error.toString());
                         }
                         res.send(list);
                     });
                 });
+
             }
+        }
+    ));
+
+    api.get('/itemLists', wagner.invoke(function (ItemList) {
+        return function (req, res) {
+            if (notLoggedIn(req, res)) {
+                return res;
+            }
+            ItemList.find({collaboratingUsers: req.user._id}, function (error, lists) {
+                if (error) {
+                    return internalError(res, 'Cannot get item lists: ' + error.toString());
+                }
+                res.send(lists);
+            });
         }
     }));
 
-    api.get('/itemLists', wagner.invoke(function (ItemList) {
-       return function (req, res) {
-           if (!req.user) {
-               return res.status(status.UNAUTHORIZED)
-                   .json({error: 'Not logged in'});
-           } else {
-               ItemList.find({collaboratingUsers: req.user._id}, function (error, lists) {
-                   if (error) {
-                       return res.status(status.INTERNAL_SERVER_ERROR).json({error: 'Cannot get item lists: ' + error.toString()});
-                   }
-                   res.send(lists);
-               });
-           }
-       }
-    }));
+    function notLoggedIn(req, res) {
+        if (!req.user) {
+            return res.status(status.UNAUTHORIZED)
+                .json({error: 'Not logged in'});
+        }
+    }
+
+    function internalError(res, message) {
+        return res.status(status.INTERNAL_SERVER_ERROR).json({error: message});
+    }
 
     return api;
 
