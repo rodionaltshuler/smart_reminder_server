@@ -7,7 +7,8 @@ var itemSchema =  {
     timeAdded: { type: Number, required: true },
     whoRemoved: { type: String, ref: 'User' },
     timeRemoved: { type: Number },
-    itemsList: { type: String, ref: 'ItemsList' }
+    itemsList: { type: String, ref: 'ItemsList' },
+    deleted: { type: Boolean }
 };
 
 var schema = new mongoose.Schema(itemSchema);

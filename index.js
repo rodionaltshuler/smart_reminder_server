@@ -9,6 +9,7 @@ wagner.invoke(require('./auth/auth'), {app: app});
 
 app.use('/api/v1', require('./routes/usersRoute')(wagner));
 app.use('/api/v1', require('./routes/itemListsRoute')(wagner));
+app.use('/api/v1', require('./routes/itemRoute')(wagner));
 
 app.listen(3000);
 
