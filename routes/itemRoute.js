@@ -33,7 +33,11 @@ module.exports = function (wagner) {
                     return res.status(status.FORBIDDEN);
                     //.json({error: 'You\'re not among collaborating users of the itemsList requested'});
                 } else {
-                    Item.find({itemsList: itemsList._id}, function (error, items) {
+                    var query = {
+                        itemsList: listId,
+                        deleted: {$ne: true}
+                    };
+                    Item.find(query, function (error, items) {
                         if (error) {
                             return internalError(res, 'Cannot get items: ' + error.toString());
                         } else {
@@ -55,7 +59,7 @@ module.exports = function (wagner) {
             if (notLoggedIn(req, res)) {
                 return res;
             }
-            var item = Item.findOne({_id: id}, function (error, item) {
+            var item = Item.findOne({_id: id, deleted: { $ne: true}}, function (error, item) {
                 if (error) {
                     return internalError(res, 'Cannot get item: ' + error.toString());
                 } else {
@@ -68,11 +72,41 @@ module.exports = function (wagner) {
     //Remove item from the list (actually it will be update)
 
     //Update item
-    api.put('/item', wagner.invoke(function (Item) {
+    api.delete('/item/:itemId/remove', wagner.invoke(function (Item, ItemList) {
         return function (req, res) {
+            if (notLoggedIn(req, res)) {
+                return res;
+            }
+            let user = req.user;
+            let itemId = req.params.itemId;
+            Item.findOne({_id: itemId, deleted: { $ne: true }}, function (error, item) {
+                if (error) {
+                    return internalError(res, 'Error getting item to update: ' + error.toString());
+                }
+                if (!item) {
+                    return res.status(status.NOT_FOUND)
+                        .json({error: 'Item  with id {' + itemId + '} not found'});
+                }
 
+                ItemList.findOne({_id: item.itemsList}, function (error, itemsList) {
+                    if (itemsList.collaboratingUsers.indexOf(req.user._id) < 0) {
+                        return res.status(status.FORBIDDEN)
+                            .json({error: 'You\'re not among collaborating users of the itemsList requested'});
+                    }
+                    item.whoRemoved = user._id;
+                    item.timeRemoved = Date.now() / 1000 | 0;
+                    item.deleted = true;
+                    item.save(function (error, removedItem) {
+                        if (error) {
+                            return internalError(res, 'Error removing item: ' + error.toString());
+                        }
+                        res.send(removedItem);
+                    });
+                });
+            });
         }
     }));
+
 
     //Add item to the list;
     //params: name, listId
@@ -96,7 +130,13 @@ module.exports = function (wagner) {
                 itemsList: listId
             });
 
-            Item.findOne({name: req.body.name, itemsList: listId}, function (err, existingItems) {
+            var queryExistingItem = {
+                name: req.body.name,
+                itemsList: listId,
+                $or: [{deleted: null}, {deleted: false}]
+            };
+
+            Item.findOne(queryExistingItem, function (err, existingItems) {
                 if (existingItems) {
                     return res.status(status.CONFLICT).json({error: 'Item with this name already exists in the list ' + listId});
                 }

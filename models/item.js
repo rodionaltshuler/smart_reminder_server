@@ -12,7 +12,7 @@ var itemSchema =  {
 };
 
 var schema = new mongoose.Schema(itemSchema);
-schema.index({ itemsList: 1, name: 1}, { unique: true });
+schema.index({ itemsList: 1, name: 1}, { unique: false });
 
 module.exports = schema;
 module.exports.itemmSchema = schema;
