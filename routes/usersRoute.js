@@ -13,7 +13,6 @@ module.exports = function (wagner) {
     //create new user
     api.post('/users', wagner.invoke(function (User) {
         return function (req, res) {
-            console.log(req.body);
             var user = new User({name: req.body.name, email: req.body.email});
             User.findOne({email: user.email}, function (err, existingUser) {
                 //user with this email already exists
@@ -31,8 +30,10 @@ module.exports = function (wagner) {
         }
     }));
 
-    //get users list
-    //form-url encoded, fields: email, name
+
+    /** Returns users list
+     * @params email, name
+     */
     api.get('/users', wagner.invoke(function (User) {
         return function (req, res) {
             if (notLoggedIn(req, res)) {
@@ -43,6 +44,35 @@ module.exports = function (wagner) {
                     return internalError(res, 'Cannot create user: ' + error.toString());
                 }
                 res.send(users);
+            });
+        }
+    }));
+
+    /**
+     * Subscribe user for push message
+     * @param deviceId
+     */
+    api.post('/subscribe', wagner.invoke(function (User) {
+        return function (req, res) {
+            if (notLoggedIn(req, res)) {
+                return res;
+            }
+            var deviceId = req.body.deviceId;
+            if (!deviceId) {
+                return res.status(status.BAD_REQUEST)
+                    .json({error: 'Required param for push subscription {deviceId} is missing'});
+            }
+            User.findOne({_id: req.user._id}, function (err, user) {
+                if (err) {
+                    return internalError(res, 'Cannot find user for subscription: ' + error.toString());
+                }
+                user.deviceId = deviceId;
+                user.save(function (error, user) {
+                    if (error) {
+                        return internalError(res, 'Cannot save user: ' + error.toString());
+                    }
+                    return res.json({user: user});
+                });
             });
         }
     }));
