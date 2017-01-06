@@ -1,10 +1,10 @@
-var express = require('express');
-var status = require('http-status');
-var bodyParser = require('body-parser');
+let express = require('express');
+let status = require('http-status');
+let bodyParser = require('body-parser');
 
 module.exports = function (wagner) {
 
-    var api = express.Router();
+    let api = express.Router();
 
     api.use(bodyParser.urlencoded({
         extended: true
@@ -14,17 +14,13 @@ module.exports = function (wagner) {
     //query params: listId
     api.get('/item', wagner.invoke(function (Item, ItemList) {
         return function (req, res) {
-            if (notLoggedIn(req, res)) {
-                return res;
-            }
-
-            var listId = req.query.listId;
+            let listId = req.query.listId;
             if (!listId) {
                 return res.status(status.BAD_REQUEST)
                     .json({error: 'Required param listId is missing, cannot add item to the list'});
             }
 
-            var list = ItemList.findOne({_id: listId}, function (error, itemsList) {
+            let list = ItemList.findOne({_id: listId}, function (error, itemsList) {
                 if (!itemsList) {
                     return res.status(status.NOT_FOUND)
                         .json({error: 'Items list with id {' + listId + '} not found'});
@@ -33,7 +29,7 @@ module.exports = function (wagner) {
                     return res.status(status.FORBIDDEN);
                     //.json({error: 'You\'re not among collaborating users of the itemsList requested'});
                 } else {
-                    var query = {
+                    let query = {
                         itemsList: listId,
                         deleted: {$ne: true}
                     };
@@ -55,11 +51,8 @@ module.exports = function (wagner) {
     //Get item
     api.get('/item/:itemId', wagner.invoke(function (Item) {
         return function (req, res) {
-            var id = req.params.itemId;
-            if (notLoggedIn(req, res)) {
-                return res;
-            }
-            var item = Item.findOne({_id: id, deleted: { $ne: true}}, function (error, item) {
+            let id = req.params.itemId;
+            let item = Item.findOne({_id: id, deleted: { $ne: true}}, function (error, item) {
                 if (error) {
                     return internalError(res, 'Cannot get item: ' + error.toString());
                 } else {
@@ -74,9 +67,6 @@ module.exports = function (wagner) {
     //Update item
     api.delete('/item/:itemId/remove', wagner.invoke(function (Item, ItemList) {
         return function (req, res) {
-            if (notLoggedIn(req, res)) {
-                return res;
-            }
             let user = req.user;
             let itemId = req.params.itemId;
             Item.findOne({_id: itemId, deleted: { $ne: true }}, function (error, item) {
@@ -113,24 +103,20 @@ module.exports = function (wagner) {
     api.post('/item', wagner.invoke(function (Item) {
         return function (req, res) {
 
-            if (notLoggedIn(req, res)) {
-                return res;
-            }
-
-            var listId = req.body.listId;
+            let listId = req.body.listId;
             if (!listId) {
                 return res.status(status.BAD_REQUEST)
                     .json({error: 'Required param listId is missing, cannot add item to the list'});
             }
 
-            var item = new Item({
+            let item = new Item({
                 name: req.body.name,
                 whoAdded: req.user._id,
                 timeAdded: Date.now() / 1000 | 0,
                 itemsList: listId
             });
 
-            var queryExistingItem = {
+            let queryExistingItem = {
                 name: req.body.name,
                 itemsList: listId,
                 $or: [{deleted: null}, {deleted: false}]
@@ -151,13 +137,6 @@ module.exports = function (wagner) {
 
         }
     }));
-
-    function notLoggedIn(req, res) {
-        if (!req.user) {
-            return res.status(status.UNAUTHORIZED)
-                .json({error: 'Not logged in'});
-        }
-    }
 
     function internalError(res, message) {
         return res.status(status.INTERNAL_SERVER_ERROR).json({error: message});
