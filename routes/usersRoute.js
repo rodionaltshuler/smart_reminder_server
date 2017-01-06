@@ -2,6 +2,8 @@ var express = require('express');
 var status = require('http-status');
 var bodyParser = require('body-parser');
 
+var token = require("../auth/token");
+
 module.exports = function (wagner) {
 
     var api = express.Router();
@@ -41,7 +43,7 @@ module.exports = function (wagner) {
             }
             User.find({}, function (err, users) {
                 if (err) {
-                    return internalError(res, 'Cannot create user: ' + error.toString());
+                    return internalError(res, 'Cannot get users: ' + error.toString());
                 }
                 res.send(users);
             });
@@ -107,9 +109,9 @@ module.exports = function (wagner) {
     });
 
     function notLoggedIn(req, res) {
-        if (!req.user) {
-            return res.status(status.UNAUTHORIZED)
-                .json({error: 'Not logged in'});
+        var err = token(req, res);
+        if (err) {
+            return err;
         }
     }
 

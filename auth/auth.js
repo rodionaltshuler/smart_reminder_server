@@ -57,6 +57,7 @@ function setupAuth(User, app) {
     app.get('/auth/facebook/callback',
         passport.authenticate('facebook', {failureRedirect: '/fail'}),
         function (req, res) {
+            //TODO return JWT
             res.send('Welcome, ' + req.user.name);
         });
 
