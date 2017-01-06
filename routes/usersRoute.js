@@ -12,27 +12,6 @@ module.exports = function (wagner) {
         extended: true
     }));
 
-    //create new user
-    api.post('/users', wagner.invoke(function (User) {
-        return function (req, res) {
-            var user = new User({name: req.body.name, email: req.body.email});
-            User.findOne({email: user.email}, function (err, existingUser) {
-                //user with this email already exists
-                if (existingUser) {
-                    return res.status(status.CONFLICT).json({error: 'User with e-mail already exists: ' + user.email});
-                }
-                user.save(function (error, user) {
-                    if (error) {
-                        return internalError(res, 'Cannot create user: ' + error.toString());
-                    }
-                    return res.json({user: user});
-                });
-            });
-
-        }
-    }));
-
-
     /** Returns users list
      */
     api.get('/users', wagner.invoke(function (User) {
