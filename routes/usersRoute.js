@@ -26,12 +26,15 @@ module.exports = function (wagner) {
      *       picture:
      *         type: string
      *         description: profile picture URL
+     *         example: https://graph.facebook.com/664522183622806/picture?type=large
      *       oauth:
      *         description: facebook ID
      *         type: string
      *         required: true
+     *         example: 664522183622806
      *       deviceId:
      *         type: string
+     *         example: APA91bHPRgkF3JUikC4ENAHEeMrd41Zxv3hVZjC9KtT8OvPVGJ-hQMRKRrZuJAEcl7B338qju59zJMjw2DELjzEvxwYv7hH5Ynpc1ODQ0aT4U4OFEeco8ohsN5PjL1iC2dNtk2BAokeMCg2ZXKqpc8FXKmhX94kIxQ
      *
      * /api/v1/users:
      *   get:
@@ -118,7 +121,36 @@ module.exports = function (wagner) {
         }
     }));
 
-    //get user by id
+    /**
+     * @swagger
+     * /api/v1/users/{user_id}:
+     *   get:
+     *     tags:
+     *       - Users
+     *     description: Gets user by user_id
+     *     produces:
+     *       - application/json
+     *     parameters:
+     *       - name: user_id
+     *         description: user id
+     *         in: path
+     *         required: true
+     *         type: string
+     *       - name: Authorization
+     *         description: Auth token
+     *         in: header
+     *         required: true
+     *         type: string
+     *     responses:
+     *       200:
+     *         description: User with updated deviceId
+     *         schema:
+     *               "$ref": "#/definitions/User"
+     *       401:
+     *         description: Authorization token is missing or invalid
+     *       500:
+     *         description: Error when getting users from DB
+     */
     api.get('/users/:user_id', wagner.invoke(function (User) {
         return function (req, res) {
             let id = req.params.user_id;
@@ -136,6 +168,31 @@ module.exports = function (wagner) {
         }
     }));
 
+    /**
+     * @swagger
+     * /api/v1/me:
+     *   get:
+     *     tags:
+     *       - Users
+     *     description: Returns info of a user Authorization token belongs to
+     *     produces:
+     *       - application/json
+     *     parameters:
+     *       - name: Authorization
+     *         description: Auth token
+     *         in: header
+     *         required: true
+     *         type: string
+     *     responses:
+     *       200:
+     *         description: User with updated deviceId
+     *         schema:
+     *               "$ref": "#/definitions/User"
+     *       401:
+     *         description: Authorization token is missing or invalid
+     *       500:
+     *         description: Error when getting users from DB
+     */
     api.get('/me', wagner.invoke(function (User) {
         return function (req, res) {
             User.findOne({_id: req.user._id}, function (err, user) {

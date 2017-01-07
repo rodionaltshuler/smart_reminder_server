@@ -11,9 +11,9 @@ let app = express();
 // swagger definition
 var swaggerDefinition = {
     info: {
-        title: 'Node Swagger API',
+        title: 'SmartReminder API',
         version: '1.0.0',
-        description: 'Demonstrating how to describe a RESTful API with Swagger',
+        description: 'node.js server for mobile and web clients'
     },
     host: 'localhost:3000',
     basePath: '/',
