@@ -10,7 +10,55 @@ module.exports = function (wagner) {
         extended: true
     }));
 
-    /** Returns users list
+    /**
+     * @swagger
+     * definition:
+     *   User:
+     *     properties:
+     *       name:
+     *         type: string
+     *         required: true
+     *         example: John Doe
+     *       email:
+     *         type: string
+     *         required: true
+     *         example: john.doe@mail.com
+     *       picture:
+     *         type: string
+     *         description: profile picture URL
+     *       oauth:
+     *         description: facebook ID
+     *         type: string
+     *         required: true
+     *       deviceId:
+     *         type: string
+     *
+     * /api/v1/users:
+     *   get:
+     *     tags:
+     *       - Users
+     *     description: Returns users list
+     *     produces:
+     *       - application/json
+     *     parameters:
+     *       - name: Authorization
+     *         description: Auth token
+     *         in: header
+     *         required: true
+     *         type: string
+     *     responses:
+     *       200:
+     *         description: An array of users
+     *         schema: {
+     *           "type": "array",
+     *            "items": {
+     *               "$ref": "#/definitions/User"
+     *            }
+     *        }
+     *       401:
+     *         description: Authorization token is missing or invalid
+     *       500:
+     *         description: Error when getting users from DB
      */
     api.get('/users', wagner.invoke(function (User) {
         return function (req, res) {
@@ -24,8 +72,34 @@ module.exports = function (wagner) {
     }));
 
     /**
-     * Subscribe user for push message
-     * @param deviceId
+     * @swagger
+     * /api/v1/subscribe:
+     *   post:
+     *     tags:
+     *       - Users
+     *     description: Subscribe device for push messages
+     *     produces:
+     *       - application/json
+     *     parameters:
+     *       - name: deviceId
+     *         description: registration ID of device in GCM
+     *         in: query
+     *         required: true
+     *         type: string
+     *       - name: Authorization
+     *         description: Auth token
+     *         in: header
+     *         required: true
+     *         type: string
+     *     responses:
+     *       200:
+     *         description: User with updated deviceId
+     *         schema:
+     *               "$ref": "#/definitions/User"
+     *       401:
+     *         description: Authorization token is missing or invalid
+     *       500:
+     *         description: Error when getting users from DB
      */
     api.post('/subscribe', wagner.invoke(function (User) {
         return function (req, res) {
