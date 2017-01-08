@@ -1,3 +1,5 @@
+"use strict";
+
 let express = require('express');
 let status = require('http-status');
 let bodyParser = require('body-parser');

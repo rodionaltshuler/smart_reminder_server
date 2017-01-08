@@ -1,3 +1,5 @@
+"use strict";
+
 function setupAuth(User, app) {
 
     var config = require('./../config');

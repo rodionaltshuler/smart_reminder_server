@@ -1,3 +1,5 @@
+"use strict";
+
 let status = require('http-status');
 let jsonwebtoken = require('jsonwebtoken');
 let fs = require("fs");
