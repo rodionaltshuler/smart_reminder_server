@@ -10,6 +10,70 @@ module.exports = function (wagner) {
         extended: true
     }));
 
+    /**
+     * @swagger
+     * definition:
+     *   ItemsList:
+     *     properties:
+     *       name:
+     *         type: string
+     *         required: true
+     *         example: Sample list #1
+     *       collaboratingUsers:
+     *         type: array
+     *         description: id's of users collaborating on this list
+     *         items:
+     *              type: string
+     *              example: bc2212239494ffkg
+     *       timeAdded:
+     *         type: number
+     *         required: true
+     *         example: 1233445566
+     *         description: timestamp when itemsList was added
+     *       whoRemoved:
+     *         type: string
+     *         description: User id who removed itemsList
+     *         example: 122344556
+     *       timeRemoved:
+     *         description: timestamp when itemsList was deleted
+     *         type: number
+     *         example: 664522183622806
+     *       deleted:
+     *         description: true if itemsList was removed
+     *         type: boolean
+     *         example: false
+     */
+
+    /**
+     * @swagger
+     * /api/v1/itemLists:
+     *   post:
+     *     tags:
+     *       - ItemLists
+     *     description: Returns list of all ItemLists
+     *     produces:
+     *       - application/json
+     *     parameters:
+     *       - name: Authorization
+     *         description: Auth token
+     *         in: header
+     *         required: true
+     *         type: string
+     *       - name: name
+     *         description: new items list name
+     *         in: body
+     *         required: true
+     *         type: string
+     *     responses:
+     *       200:
+     *         description: ItemsList created
+     *         schema:
+     *               "$ref": "#/definitions/ItemsList"
+     *       401:
+     *         description: Authorization token is missing or invalid
+     *       500:
+     *         description: Error when getting users from DB
+     */
     api.post('/itemLists', wagner.invoke(function (ItemList) {
             return function (req, res) {
                 console.log('Creating items list: ' + req.user);
@@ -32,6 +96,35 @@ module.exports = function (wagner) {
         }
     ));
 
+    /**
+     * @swagger
+     * /api/v1/itemLists:
+     *   get:
+     *     tags:
+     *       - ItemLists
+     *     description: Returns list of all ItemLists where current user is among collaborating users
+     *     produces:
+     *       - application/json
+     *     parameters:
+     *       - name: Authorization
+     *         description: Auth token
+     *         in: header
+     *         required: true
+     *         type: string
+     *     responses:
+     *       200:
+     *         description: An array of item lists
+     *         schema: {
+     *           "type": "array",
+     *            "items": {
+     *               "$ref": "#/definitions/ItemsList"
+     *            }
+     *        }
+     *       401:
+     *         description: Authorization token is missing or invalid
+     *       500:
+     *         description: Error when getting users from DB
+     */
     api.get('/itemLists',
         wagner.invoke(function (ItemList) {
         return function (req, res) {

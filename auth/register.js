@@ -12,6 +12,45 @@ module.exports = function (wagner) {
         extended: true
     }));
 
+     /**
+     * @swagger
+     * definition:
+     *   Login:
+     *     type: object
+     *     description: User object with accessToken
+     *     allOf:
+     *       - $ref: '#/definitions/User'
+     *     properties:
+     *       accessToken:
+     *         type: string
+     *         example: APA91bHPRgkF3JUikC4ENAHEeMrd41Zxv3hVZjC9KtT8OvPVGJ-hQMRKRrZuJAEcl7B338qju59zJMjw2DELjzEvxwYv7hH5Ynpc1ODQ0aT4U4OFEeco8ohsN5PjL1iC2dNtk2BAokeMCg2ZXKqpc8FXKmhX94kIxQ
+     */
+
+    /**
+     * @swagger
+     * /api/v1/login:
+     *   post:
+     *     tags:
+     *       - Auth
+     *     description: Adds item to the list
+     *     produces:
+     *       - application/json
+     *     parameters:
+     *       - name: accessToken
+     *         description: FB user token
+     *         in: body
+     *         required: true
+     *         type: string
+     *     responses:
+     *       200:
+     *         description: User object with accessToken
+     *         schema:
+     *               "$ref": "#/definitions/Login"
+     *       401:
+     *         description: Error getting user data via Facebook token provided
+     *       500:
+     *         description: Error when getting existing user from DB or saving new
+     */
     api.post('/login', wagner.invoke(function (User) {
         return function (req, res) {
 
