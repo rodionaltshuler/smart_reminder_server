@@ -40,7 +40,7 @@ module.exports = function (wagner) {
      *     parameters:
      *       - name: accessToken
      *         description: FB user token
-     *         in: body
+     *         in: formData
      *         required: true
      *         type: string
      *     responses:
