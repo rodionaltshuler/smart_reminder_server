@@ -2,10 +2,11 @@
 
 function setupAuth(User, app) {
 
-    var config = require('./../config');
+    let fbConfig = require('./../fbconfig');
+    let config = require('./../config');
 
-    var passport = require('passport');
-    var FacebookStrategy = require('passport-facebook').Strategy;
+    let passport = require('passport');
+    let FacebookStrategy = require('passport-facebook').Strategy;
 
     passport.serializeUser(function (user, done) {
         done(null, user._id);
@@ -17,8 +18,8 @@ function setupAuth(User, app) {
 
     passport.use(new FacebookStrategy(
         {
-            clientID: config.fbClientId,
-            clientSecret: config.fbSecret,
+            clientID: fbConfig.clientId,
+            clientSecret: fbConfig.secret,
             callbackURL: config.host + '/auth/facebook/callback',
             profileFields: ['id', 'emails', 'name', 'displayName']
         },
@@ -46,7 +47,7 @@ function setupAuth(User, app) {
     ));
 
     app.use(require('express-session')({
-        secret: config.fbSecret,
+        secret: fbConfig.secret,
         resave: true,
         saveUninitialized: true
     }));

@@ -3,24 +3,25 @@
 let express = require('express');
 let wagner = require('wagner-core');
 let swaggerJSDoc = require('swagger-jsdoc');
+let config = require('./config');
 
 require('./models/models')(wagner);
 
 let app = express();
 
 // swagger definition
-var swaggerDefinition = {
+let swaggerDefinition = {
     info: {
         title: 'SmartReminder API',
         version: '1.0.0',
         description: 'node.js server for mobile and web clients'
     },
-    host: 'localhost:3000',
+    host: config.host + ":" + config.port,
     basePath: '/',
 };
 
 // options for the swagger docs
-var options = {
+let options = {
     // import swaggerDefinitions
     swaggerDefinition: swaggerDefinition,
     // path to the API docs
@@ -28,7 +29,7 @@ var options = {
 };
 
 // initialize swagger-jsdoc
-var swaggerSpec = swaggerJSDoc(options);
+let swaggerSpec = swaggerJSDoc(options);
 
 
 let fs = require("fs");
@@ -51,7 +52,7 @@ app.use(express_jwt({
         }
         return null;
     }
-}).unless({path: ['/api/v1/login', '/swagger.json', '/api-docs/:file']}));
+}).unless({path: ['/api/v1/login', '/auth/facebook', '/swagger.json', '/api-docs/:file']}));
 
 app.use(function (err, req, res, next) {
     if (err.name === 'UnauthorizedError') {
@@ -73,6 +74,7 @@ app.get('/swagger.json', function(req, res) {
     res.send(swaggerSpec);
 });
 
-app.listen(3000);
+let port = config.port;
+app.listen(port);
 
-console.log("SmartReminder server listening on port 3000");
+console.log("SmartReminder server listening on port " + port);

@@ -1,18 +1,19 @@
 "use strict";
 
-var mongoose = require('mongoose');
-var _ = require('underscore');
+let mongoose = require('mongoose');
+let _ = require('underscore');
+let dbConfig = require('./../dbconfig');
 
 module.exports = function(wagner) {
-    mongoose.connect('mongodb://localhost:27017/test');
+    mongoose.connect('mongodb://' + dbConfig.host + ":" + dbConfig.port + dbConfig.path);
 
-    var Item = mongoose.model('Item', require('./item'), 'items');
+    let Item = mongoose.model('Item', require('./item'), 'items');
 
-    var ItemsList = mongoose.model('ItemsList', require('./itemsList'), 'itemLists');
+    let ItemsList = mongoose.model('ItemsList', require('./itemsList'), 'itemLists');
 
-    var User = mongoose.model('User', require('./user'), 'users');
+    let User = mongoose.model('User', require('./user'), 'users');
 
-    var models = {
+    let models = {
         Item: Item,
         ItemList: ItemsList,
         User: User
