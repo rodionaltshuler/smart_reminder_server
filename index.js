@@ -40,12 +40,9 @@ let express_jwt = require('express-jwt');
 
 app.use(express.static('public'));
 
-//enable CORS
-app.use(function(req, res, next) {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-    next();
-});
+let cors = require('cors');
+app.options('*', cors()); // include before other routes
+app.use(cors());
 
 app.use('/api', express_jwt({
     secret: decodeKey,
