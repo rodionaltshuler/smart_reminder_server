@@ -4,6 +4,7 @@ let express = require('express');
 let wagner = require('wagner-core');
 let swaggerJSDoc = require('swagger-jsdoc');
 let config = require('./config');
+let url = require('url');
 
 require('./models/models')(wagner);
 
@@ -16,7 +17,7 @@ let swaggerDefinition = {
         version: '1.0.0',
         description: 'node.js server for mobile and web clients'
     },
-    host: config.host + ":" + config.port,
+    host: url.parse(config.host).host + ":" + config.port,
     basePath: '/',
 };
 
@@ -42,7 +43,7 @@ let express_jwt = require('express-jwt');
 
 app.use(express.static('public'));
 
-app.use(express_jwt({
+app.use('/api', express_jwt({
     secret: decodeKey,
     algorithms:'RS256',
     credentialsRequired: true,
@@ -52,7 +53,7 @@ app.use(express_jwt({
         }
         return null;
     }
-}).unless({path: ['/api/v1/login', '/auth/facebook', '/swagger.json', '/api-docs/:file']}));
+}).unless({path: ['/api/v1/login']}));
 
 app.use(function (err, req, res, next) {
     if (err.name === 'UnauthorizedError') {
