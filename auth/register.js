@@ -1,9 +1,9 @@
 "use strict";
 
-var express = require('express');
-var status = require('http-status');
-var bodyParser = require('body-parser');
-
+let express = require('express');
+let status = require('http-status');
+let bodyParser = require('body-parser');
+let https = require('https');
 let token = require("./jwt");
 
 module.exports = function (wagner) {
@@ -14,7 +14,7 @@ module.exports = function (wagner) {
         extended: true
     }));
 
-     /**
+    /**
      * @swagger
      * definition:
      *   Login:
@@ -34,7 +34,7 @@ module.exports = function (wagner) {
      *   post:
      *     tags:
      *       - Auth
-     *     description: Adds item to the list
+     *     description: Returns existing user or creates new one
      *     produces:
      *       - application/json
      *     parameters:
@@ -56,15 +56,29 @@ module.exports = function (wagner) {
     api.post('/login', wagner.invoke(function (User) {
         return function (req, res) {
 
-            let https = require('https');
+            let accessToken = req.body.accessToken;
 
-            let access_token = req.body.accessToken;
+            fetchFacebookProfile(accessToken)
+                .then(facebookProfile =>
+                    findUserByFacebookUserProfile(facebookProfile, User))
+                .then(
+                    function fulfilled(userJson) {
+                        res.send(userJson);
+                    },
+                    function rejected(err) {
+                        return res.status(err.status).json({error: err.message});
+                    }
+                );
+        }
+    }));
 
-            let options = {
-                host: 'graph.facebook.com',
-                path: '/me?access_token=' + access_token
-            };
 
+    function fetchFacebookProfile(accessToken) {
+        let options = {
+            host: 'graph.facebook.com',
+            path: '/me?access_token=' + accessToken
+        };
+        return new Promise(function (resolve, reject) {
             https.get(options, function (response) {
                 let data = '';
 
@@ -76,44 +90,62 @@ module.exports = function (wagner) {
                     console.log(data);
                     let facebookProfile = JSON.parse(data);
                     if (facebookProfile.error) {
-                        return res.status(status.UNAUTHORIZED).json({error: facebookProfile.error.message});
-                    } else {
-                        let query = {};
-                        if (facebookProfile.email) {
-                            query.email = facebookProfile.email;
-                        } else {
-                            query.oauth = facebookProfile.id;
-                        }
-                        User.findOne(query, function (err, existingUser) {
-                            if (err) {
-                                return res.status(status.INTERNAL_SERVER_ERROR).json({error: err.toString()})
-                            }
-                            if (existingUser) {
-                                console.log("User with id " + facebookProfile.id + " already exists");
-                            } else {
-                                console.log("Creating new user with fb id " + facebookProfile.id);
-                                existingUser = new User({
-                                    oauth: facebookProfile.id,
-                                    name: facebookProfile.name,
-                                    email: facebookProfile.email,
-                                });
-                                existingUser.save(function (error, user) {
-                                    if (error) {
-                                        return res.status(status.INTERNAL_SERVER_ERROR).json({error: error.message})
-                                    }
-                                });
-                            }
-                            let generated = token.create(existingUser);
-                            console.log("jwt in register.js: " + generated);
-                            let userJson = existingUser.toJSON();
-                            userJson.accessToken = generated;
-                            res.send(userJson);
+                        reject({
+                            status: status.UNAUTHORIZED,
+                            message: facebookProfile.error.message
                         });
+                    } else {
+                        resolve(facebookProfile);
                     }
                 });
             });
-        }
-    }));
+        });
+    }
+
+    function findUserByFacebookUserProfile(facebookProfile, userModel) {
+        return new Promise(function (resolve, reject) {
+            let query = {};
+            if (facebookProfile.email) {
+                query.email = facebookProfile.email;
+            } else {
+                query.oauth = facebookProfile.id;
+            }
+            userModel.findOne(query, function (err, existingUser) {
+                if (err) {
+                    reject({
+                        status: status.INTERNAL_SERVER_ERROR,
+                        message: err.toString()
+                    });
+                } else {
+                    if (existingUser) {
+                        console.log("User with id " + facebookProfile.id + " already exists");
+                    } else {
+                        console.log("Creating new user with fb id " + facebookProfile.id);
+                        existingUser = new User({
+                            oauth: facebookProfile.id,
+                            name: facebookProfile.name,
+                            email: facebookProfile.email,
+                        });
+                        existingUser.save(function (error, user) {
+                            if (error) {
+                                reject({
+                                    status: status.INTERNAL_SERVER_ERROR,
+                                    message: error.message
+                                });
+                            }
+                        });
+                    }
+                    let generated = token.create(existingUser);
+                    console.log("jwt in register.js: " + generated);
+                    let userJson = existingUser.toJSON();
+                    userJson.accessToken = generated;
+
+                    resolve(userJson);
+                }
+            });
+        });
+    }
 
     return api;
-};
+}
+;
