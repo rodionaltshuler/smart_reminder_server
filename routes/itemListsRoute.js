@@ -85,6 +85,7 @@ module.exports = function (wagner) {
                     if (existingList) {
                         return res.status(status.CONFLICT).json({error: 'ItemList with this name already exists for a user: ' + list.name});
                     }
+                    list.timeAdded = Date.now() / 1000 | 0;
                     list.collaboratingUsers.push(req.user._id);
                     list.save(function (error, list) {
                         if (error) {

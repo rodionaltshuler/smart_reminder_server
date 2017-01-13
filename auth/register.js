@@ -102,7 +102,7 @@ module.exports = function (wagner) {
         });
     }
 
-    function findUserByFacebookUserProfile(facebookProfile, userModel) {
+    function findUserByFacebookUserProfile(facebookProfile, User) {
         return new Promise(function (resolve, reject) {
             let query = {};
             if (facebookProfile.email) {
@@ -110,7 +110,7 @@ module.exports = function (wagner) {
             } else {
                 query.oauth = facebookProfile.id;
             }
-            userModel.findOne(query, function (err, existingUser) {
+            User.findOne(query, function (err, existingUser) {
                 if (err) {
                     reject({
                         status: status.INTERNAL_SERVER_ERROR,
