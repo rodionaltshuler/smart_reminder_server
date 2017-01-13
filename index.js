@@ -17,7 +17,7 @@ let swaggerDefinition = {
         version: '1.0.0',
         description: 'node.js server for mobile and web clients'
     },
-    host: url.parse(config.host).host + ":" + config.port,
+    host: config.swaggerHost,
     basePath: '/',
 };
 
