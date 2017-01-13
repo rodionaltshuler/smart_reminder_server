@@ -38,7 +38,13 @@
       if (url && url.length > 1) {
         url = decodeURIComponent(url[1]);
       } else {
-        url = "http://localhost:3000/swagger.json";
+          var getLocation = function(href) {
+              var l = document.createElement("a");
+              l.href = href;
+              return l;
+          };
+          var l = getLocation(window.location.href);
+          url = l.protocol + '//' + l.host + '/swagger.json';
       }
 
       hljs.configure({
