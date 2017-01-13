@@ -19,6 +19,7 @@
     "superagent": "1.2.0"
   },
   "scripts": {
+    "start": "./start.sh",
     "test": "mocha test.js"
   }
 }

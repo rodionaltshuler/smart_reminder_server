@@ -5,7 +5,7 @@ let _ = require('underscore');
 let dbConfig = require('./../dbconfig');
 
 module.exports = function(wagner) {
-    mongoose.connect('mongodb://' + dbConfig.host + ":" + dbConfig.port + dbConfig.path);
+    mongoose.connect(dbConfig.dbUri);
 
     let Item = mongoose.model('Item', require('./item'), 'items');
 
