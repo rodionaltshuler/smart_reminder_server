@@ -1,8 +1,8 @@
 "use strict";
 
 let googleCloudConfig = {
-    swaggerHost: 'smart-reminder-us.appspot-preview.com',
-    host: 'https://smart-reminder-us.appspot-preview.com',
+    swaggerHost: 'smart-reminder-us.appspot.com',
+    host: 'https://smart-reminder-us.appspot.com',
     port: process.env.PORT
 };
 
