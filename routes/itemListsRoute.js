@@ -102,6 +102,59 @@ module.exports = function (wagner) {
     /**
      * @swagger
      * /api/v1/itemLists:
+     *   delete:
+     *     tags:
+     *       - ItemLists
+     *     description: Returns list of all ItemLists
+     *     produces:
+     *       - application/json
+     *     parameters:
+     *       - name: Authorization
+     *         description: Auth token
+     *         in: header
+     *         required: true
+     *         type: string
+     *       - name: _id
+     *         description: itemsList._id to delete
+     *         in: path
+     *         required: true
+     *         type: string
+     *     responses:
+     *       200:
+     *         description: ItemsList removed
+     *         schema:
+     *               "$ref": "#/definitions/ItemsList"
+     *       401:
+     *         description: Authorization token is missing or invalid
+     *       404:
+     *         description: ItemsList to delete not found (or doesn't belong to this user)
+     *       500:
+     *         description: Error when deleting list from DB
+     */
+    api.delete('/itemLists/:listId', wagner.invoke(function (ItemList) {
+            return function (req, res) {
+                console.log('Deleting items list: ' + req.user);
+                ItemList.findOne({_id: req.params.listId, collaboratingUsers: req.user._id}, function (err, existingList) {
+                    //user with this email already exists
+                    if (existingList) {
+                        existingList.remove(function (error, removedList) {
+                            if (error) {
+                                return internalError(res, 'Cannot remove itemList: ' + error.toString());
+                            } else {
+                                res.send(removedList);
+                            }
+                        });
+                    } else {
+                        return res.status(404).json({error: "Cannot find itemsList to delete wit id " + req.params.listId});
+                    }
+                });
+            }
+        }
+    ));
+
+    /**
+     * @swagger
+     * /api/v1/itemLists:
      *   get:
      *     tags:
      *       - ItemLists
@@ -130,17 +183,17 @@ module.exports = function (wagner) {
      */
     api.get('/itemLists',
         wagner.invoke(function (ItemList) {
-        return function (req, res) {
-            console.log("Getting item lists for user id = " + req.user._id);
-            let query = {collaboratingUsers: req.user._id};
-            ItemList.find(query, function (error, lists) {
-                if (error) {
-                    return internalError(res, 'Cannot get item lists: ' + error.toString());
-                }
-                res.send(lists);
-            });
-        }
-    }));
+            return function (req, res) {
+                console.log("Getting item lists for user id = " + req.user._id);
+                let query = {collaboratingUsers: req.user._id};
+                ItemList.find(query, function (error, lists) {
+                    if (error) {
+                        return internalError(res, 'Cannot get item lists: ' + error.toString());
+                    }
+                    res.send(lists);
+                });
+            }
+        }));
 
     function internalError(res, message) {
         return res.status(status.INTERNAL_SERVER_ERROR).json({error: message});

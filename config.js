@@ -7,9 +7,9 @@ let googleCloudConfig = {
 };
 
 let localConfig = {
-    swaggerHost: 'localhost:3000',
+    swaggerHost: 'localhost:3001',
     host: 'http://localhost',
-    port: 3000
+    port: 3001
 };
 
 let configs = {
