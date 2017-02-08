@@ -322,16 +322,15 @@ module.exports = function (wagner) {
             Item.findOne(queryExistingItem, function (err, existingItems) {
                 if (existingItems) {
                     return res.status(status.CONFLICT).json({error: 'Item with this name already exists in the list ' + listId});
+                } else {
+                    item.save(function (error, item) {
+                        if (error) {
+                            return internalError(res, 'Cannot save item: ' + error.toString());
+                        }
+                        res.send(item);
+                    });
                 }
             });
-
-            item.save(function (error, item) {
-                if (error) {
-                    return internalError(res, 'Cannot save item: ' + error.toString());
-                }
-                res.send(item);
-            });
-
         }
     }));
 
