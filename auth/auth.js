@@ -20,15 +20,16 @@ function setupAuth(User, app) {
         {
             clientID: fbConfig.clientId,
             clientSecret: fbConfig.secret,
-            callbackURL: config.host + '/auth/facebook/callback',
+            callbackURL: config.host + ':' + config.port + '/auth/facebook/callback',
             profileFields: ['id', 'emails', 'name', 'displayName']
         },
         function (accessToken, refreshToken, profile, done) {
             if (!profile.emails || !profile.emails.length) {
                 return done('No emails associated with this account');
             }
+            const emails = profile.emails.map(email => email.value);
             User.findOneAndUpdate(
-                {'oauth': profile.id},
+                {'email': { $in: emails }},
                 {
                     $set: {
                         'oauth': profile.id,
