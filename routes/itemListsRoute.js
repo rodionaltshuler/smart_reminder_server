@@ -196,7 +196,7 @@ module.exports = function (wagner) {
         }));
 
     /**
-     * TODO @swagger
+     * @swagger
      * /api/v1/itemLists/{listId}/invite/{userId}:
      *   put:
      *     tags:
@@ -221,6 +221,7 @@ module.exports = function (wagner) {
      *         required: true
      *         type: string
      *     responses:
+     *       200:
      *         description: ItemsList updated
      *         schema:
      *               "$ref": "#/definitions/ItemsList"
@@ -231,14 +232,14 @@ module.exports = function (wagner) {
      *       404:
      *        description: items list with listId provided not found
      *       500:
-     *        description: Error when getting users from DB
+     *        description: DB error
      */
     api.put('/itemLists/:listId/invite/:userId',
         wagner.invoke(function (ItemList, User) {
             return function (req, res) {
                 findUser(User, req.params.userId)
                     .then(user => getItemsList(ItemList, req.params.listId))
-                    .then(itemList => new Promise(function(resolve, reject) {
+                    .then(itemList => new Promise(function (resolve, reject) {
                         if (itemList.collaboratingUsers.indexOf(req.params.userId) > -1) {
                             const err = new Error();
                             err.status = status.BAD_REQUEST;
@@ -250,11 +251,13 @@ module.exports = function (wagner) {
                     }))
                     .then(itemList => verifyUserAuthorizedForItemList(req.user, itemList))
                     .then(itemList => addUser(ItemList, itemList, req.params.userId))
-                    .then(itemList => { res.send(itemList)})
+                    .then(itemList => {
+                        res.send(itemList)
+                    })
                     .catch(error => {
                         console.log(JSON.stringify(error));
                         if (error.status) {
-                            return res.status(error.status).json(error.json || { error: error});
+                            return res.status(error.status).json(error.json || {error: error});
                         } else {
                             internalError(res, error);
                         }
@@ -289,20 +292,20 @@ module.exports = function (wagner) {
 
     function addUser(ItemList, itemList, userId) {
         return new Promise(function (resolve, reject) {
-           itemList.collaboratingUsers.push(userId);
-           ItemList.findOneAndUpdate({_id: itemList._id}, itemList, {upsert: false}, function(error, list) {
-               if (error) {
-                   reject(error);
-               } else {
-                   resolve(list);
-               }
-           });
+            itemList.collaboratingUsers.push(userId);
+            ItemList.findOneAndUpdate({_id: itemList._id}, itemList, {upsert: false}, function (error, list) {
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(list);
+                }
+            });
         });
     }
 
     function findUser(User, userId) {
         return new Promise(function (resolve, reject) {
-            User.findOne({_id: userId}, function(error, user) {
+            User.findOne({_id: userId}, function (error, user) {
                 if (error) {
                     const err = new Error();
                     err.status = status.NOT_FOUND;
