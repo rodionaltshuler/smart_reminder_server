@@ -195,6 +195,126 @@ module.exports = function (wagner) {
             }
         }));
 
+    /**
+     * TODO @swagger
+     * /api/v1/itemLists/{listId}/invite/{userId}:
+     *   put:
+     *     tags:
+     *       - ItemLists
+     *     description: Returns list of all ItemLists where current user is among collaborating users
+     *     produces:
+     *       - application/json
+     *     parameters:
+     *       - name: Authorization
+     *         description: Auth token
+     *         in: header
+     *         required: true
+     *         type: string
+     *       - name: listId
+     *         description: items list id to update
+     *         in: path
+     *         required: true
+     *         type: string
+     *       - name: userId
+     *         description: user Id to invite for collaboration on this list
+     *         in: path
+     *         required: true
+     *         type: string
+     *     responses:
+     *         description: ItemsList updated
+     *         schema:
+     *               "$ref": "#/definitions/ItemsList"
+     *       401:
+     *         description: Authorization token is missing or invalid
+     *       403:
+     *        description: user with id provided is already collaborating on this list
+     *       404:
+     *        description: items list with listId provided not found
+     *       500:
+     *        description: Error when getting users from DB
+     */
+    api.put('/itemLists/:listId/invite/:userId',
+        wagner.invoke(function (ItemList, User) {
+            return function (req, res) {
+                findUser(User, req.params.userId)
+                    .then(user => getItemsList(ItemList, req.params.listId))
+                    .then(itemList => new Promise(function(resolve, reject) {
+                        if (itemList.collaboratingUsers.indexOf(req.params.userId) > -1) {
+                            const err = new Error();
+                            err.status = status.BAD_REQUEST;
+                            err.json = {error: 'User already collaborating on this list'};
+                            reject(err);
+                        } else {
+                            resolve(itemList);
+                        }
+                    }))
+                    .then(itemList => verifyUserAuthorizedForItemList(req.user, itemList))
+                    .then(itemList => addUser(ItemList, itemList, req.params.userId))
+                    .then(itemList => { res.send(itemList)})
+                    .catch(error => {
+                        console.log(JSON.stringify(error));
+                        if (error.status) {
+                            return res.status(error.status).json(error.json || { error: error});
+                        } else {
+                            internalError(res, error);
+                        }
+                    })
+            }
+        }));
+
+    function getItemsList(ItemList, listId) {
+        return new Promise(function (resolve, reject) {
+            ItemList.findOne({_id: listId}, function (error, itemList) {
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(itemList);
+                }
+            })
+        });
+    }
+
+    function verifyUserAuthorizedForItemList(user, itemList) {
+        return new Promise(function (resolve, reject) {
+            if (itemList.collaboratingUsers.indexOf(user._id) > -1) {
+                resolve(itemList);
+            } else {
+                const err = new Error();
+                err.status = status.FORBIDDEN;
+                err.json = 'User ' + user._id + ' doesn\'t have access to this items list';
+                reject(err);
+            }
+        });
+    }
+
+    function addUser(ItemList, itemList, userId) {
+        return new Promise(function (resolve, reject) {
+           itemList.collaboratingUsers.push(userId);
+           ItemList.findOneAndUpdate({_id: itemList._id}, itemList, {upsert: false}, function(error, list) {
+               if (error) {
+                   reject(error);
+               } else {
+                   resolve(list);
+               }
+           });
+        });
+    }
+
+    function findUser(User, userId) {
+        return new Promise(function (resolve, reject) {
+            User.findOne({_id: userId}, function(error, user) {
+                if (error) {
+                    const err = new Error();
+                    err.status = status.NOT_FOUND;
+                    err.json = {error: 'User to invite wasn\'t found'};
+                    reject(err);
+                } else {
+                    resolve(user);
+                }
+            });
+        });
+    }
+
     function internalError(res, message) {
         return res.status(status.INTERNAL_SERVER_ERROR).json({error: message});
     }
