@@ -57,7 +57,7 @@ module.exports = function (wagner) {
         return function (req, res) {
 
             let accessToken = req.body.accessToken;
-
+            console.log('fetchFacebookProfile with access token ' + accessToken);
             fetchFacebookProfile(accessToken)
                 .then(facebookProfile =>
                     findUserByFacebookUserProfile(facebookProfile, User))
@@ -66,7 +66,10 @@ module.exports = function (wagner) {
                         res.send(userJson);
                     },
                     function rejected(err) {
-                        return res.status(err.status).json({error: err.message});
+                        console.log('Rejected: ' + JSON.stringify(err));
+                        return res
+                            .status(err.status || status.INTERNAL_SERVER_ERROR)
+                            .json({error: err.message || 'Error logging in'});
                     }
                 );
         }
@@ -76,7 +79,7 @@ module.exports = function (wagner) {
     function fetchFacebookProfile(accessToken) {
         let options = {
             host: 'graph.facebook.com',
-            path: '/me?access_token=' + accessToken
+            path: '/me?access_token=' + accessToken + "&fields=name,email"
         };
         return new Promise(function (resolve, reject) {
             https.get(options, function (response) {
@@ -87,9 +90,11 @@ module.exports = function (wagner) {
                 });
 
                 response.on('end', function () {
-                    console.log(data);
+                    console.log('Facebook data fetched: ' + data);
                     let facebookProfile = JSON.parse(data);
+                    console.log('Facebook profile: ' + JSON.stringify(facebookProfile));
                     if (facebookProfile.error) {
+                        console.log('Error in fetchFacebookProfile: ' + JSON.stringify(facebookProfile.error));
                         reject({
                             status: status.UNAUTHORIZED,
                             message: facebookProfile.error.message
@@ -104,45 +109,31 @@ module.exports = function (wagner) {
 
     function findUserByFacebookUserProfile(facebookProfile, User) {
         return new Promise(function (resolve, reject) {
-            let query = {};
-            if (facebookProfile.email) {
-                query.email = facebookProfile.email;
-            } else {
-                query.oauth = facebookProfile.id;
-            }
-            User.findOne(query, function (err, existingUser) {
-                if (err) {
-                    reject({
-                        status: status.INTERNAL_SERVER_ERROR,
-                        message: err.toString()
-                    });
-                } else {
-                    if (existingUser) {
-                        console.log("User with id " + facebookProfile.id + " already exists");
-                    } else {
-                        console.log("Creating new user with fb id " + facebookProfile.id);
-                        existingUser = new User({
-                            oauth: facebookProfile.id,
-                            name: facebookProfile.name,
-                            email: facebookProfile.email,
-                        });
-                        existingUser.save(function (error, user) {
-                            if (error) {
-                                reject({
-                                    status: status.INTERNAL_SERVER_ERROR,
-                                    message: error.message
-                                });
-                            }
-                        });
+            User.findOneAndUpdate(
+                {email: facebookProfile.email},
+                {
+                    $set: {
+                        'oauth': facebookProfile.id,
+                        'email': facebookProfile.email,
+                        'name': facebookProfile.name,
+                        'picture': 'http://graph.facebook.com/' + facebookProfile.id.toString() + '/picture?type=large'
                     }
-                    let generated = token.create(existingUser);
-                    console.log("jwt in register.js: " + generated);
-                    let userJson = existingUser.toJSON();
-                    userJson.accessToken = generated;
-
-                    resolve(userJson);
-                }
-            });
+                },
+                {'new': true, upsert: true, runValidators: true},
+                function (error, user) {
+                    if (error) {
+                        console.log('Error saving user: ' + JSON.stringify(error));
+                        reject({
+                            status: status.INTERNAL_SERVER_ERROR,
+                            message: error.toString()
+                        });
+                    } else {
+                        let generated = token.create(user);
+                        let userJson = user.toJSON();
+                        userJson.accessToken = generated;
+                        resolve(userJson);
+                    }
+                });
         });
     }
 

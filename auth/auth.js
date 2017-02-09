@@ -40,6 +40,9 @@ function setupAuth(User, app) {
                 },
                 {'new': true, upsert: true, runValidators: true},
                 function (error, user) {
+                    if (user) {
+                        user.fbToken = accessToken;
+                    }
                     done(error, user);
                 }
             )
@@ -62,6 +65,7 @@ function setupAuth(User, app) {
         passport.authenticate('facebook', {failureRedirect: '/fail'}),
         function (req, res) {
             //TODO return JWT
+            console.log('Req fbToken:' +  req.user.fbToken);
             res.send('Welcome, ' + req.user.name);
         });
 
