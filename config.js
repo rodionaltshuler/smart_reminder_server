@@ -3,7 +3,7 @@
 let googleCloudConfig = {
     swaggerHost: 'smart-reminder-us.appspot.com',
     host: 'https://smart-reminder-us.appspot.com',
-    port: process.env.PORT
+    port: process.env.PORT || 8080
 };
 
 let localConfig = {
