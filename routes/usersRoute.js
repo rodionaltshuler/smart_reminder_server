@@ -51,6 +51,11 @@ module.exports = function (wagner) {
      *         in: header
      *         required: true
      *         type: string
+     *       - name: name
+     *         description: username or part of it to find, or exact e-mail
+     *         in: query
+     *         required: false
+     *         example: Smith
      *     responses:
      *       200:
      *         description: An array of users
@@ -66,8 +71,16 @@ module.exports = function (wagner) {
      *         description: Error when getting users from DB
      */
     api.get('/users', wagner.invoke(function (User) {
+        const RESULTS_LIMIT = 3;
         return function (req, res) {
-            User.find({}, function (err, users) {
+            let query = req.query.name ?
+                {
+                    $or: [
+                        {name: new RegExp(req.query.name, "i")},
+                        {email: req.query.name.toLowerCase()}
+                    ]
+                } : {};
+            User.find(query).limit(RESULTS_LIMIT).exec(function (err, users) {
                 if (err) {
                     return internalError(res, 'Cannot get users: ' + error.toString());
                 }
