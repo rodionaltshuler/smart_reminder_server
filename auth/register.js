@@ -114,7 +114,7 @@ module.exports = function (wagner) {
                 {
                     $set: {
                         'oauth': facebookProfile.id,
-                        'email': facebookProfile.email,
+                        'email': facebookProfile.email.toLowerCase(),
                         'name': facebookProfile.name,
                         'picture': 'http://graph.facebook.com/' + facebookProfile.id.toString() + '/picture?type=large'
                     }
