@@ -20,6 +20,7 @@
   },
   "scripts": {
     "start": "./start.sh",
+    "startLocal": "./startLocal.sh",
     "test": "mocha test.js"
   }
 }

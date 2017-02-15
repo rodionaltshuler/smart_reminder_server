@@ -126,6 +126,7 @@ module.exports = function (wagner) {
                 return res.status(status.BAD_REQUEST)
                     .json({error: 'Required param for push subscription {deviceId} is missing'});
             }
+            const user = req.user;
             user.deviceId = deviceId;
             user.save(function (error, user) {
                 if (error) {
@@ -135,6 +136,149 @@ module.exports = function (wagner) {
             });
         }
     }));
+
+    /**
+     * @swagger
+     * /api/v1/invite/{listId}/{userId}:
+     *   post:
+     *     tags:
+     *       - ItemLists
+     *     description: Subscribe device for push messages
+     *     produces:
+     *       - application/json
+     *     parameters:
+     *       - name: listId
+     *         description: itemsList you want to share with other user
+     *         in: path
+     *         required: true
+     *         type: string
+     *       - name: userId
+     *         description: userId you want to invite
+     *         in: path
+     *         required: true
+     *         type: string
+     *       - name: Authorization
+     *         description: Auth token
+     *         in: header
+     *         required: true
+     *         type: string
+     *     responses:
+     *       200:
+     *         description: Items list with updated collaborating users field
+     *         schema:
+     *               "$ref": "#/definitions/ItemList"
+     *       400:
+     *         description: You are trying to share a list with a user already collaborating on this list
+     *       401:
+     *         description: Authorization token is missing or invalid; you have no access to this list
+     *       500:
+     *         description: Other error occured
+     */
+    api.post('/invite/:listId/:userId', wagner.invoke(function (User, ItemList) {
+        return function (req, res) {
+            const userId = req.params.userId;
+            const listId = req.params.listId;
+            //update list by id -> add collaborating users to params
+
+            checkUserExists(User, userId)
+                .then(user => checkItemsListExist(ItemList, listId))
+                .then(itemsList => checkAuthorizedToInvite(req.user, itemsList))
+                .then(itemsList => checkUserNotYetInvited(userId, itemsList))
+                .then(itemsList => performInvite(itemsList, userId))
+                .then(itemsList => res.send(itemsList))
+                .catch(error => {
+                    console.log(JSON.stringify(error));
+                    if (error.status) {
+                        return res.status(error.status).json(error.json || {error: error});
+                    } else {
+                        internalError(res, error);
+                    }
+                });
+        }
+    }));
+
+    function performInvite(itemsList, userId) {
+        return new Promise(function (resolve, reject) {
+            itemsList.collaboratingUsers = [... itemsList.collaboratingUsers, userId];
+            itemsList.save(function (err, itemsList) {
+                if (err) {
+                    console.log(err.message);
+                    reject({
+                        status: status.INTERNAL_SERVER_ERROR,
+                        message: err
+                    })
+                } else {
+                    resolve(itemsList);
+                }
+            });
+        });
+    }
+
+    function checkItemsListExist(ItemsList, listId) {
+        return new Promise(function (resolve, reject) {
+            ItemsList.findOne({_id: listId}, function (err, itemsList) {
+                if (err) {
+                    console.log(err.message);
+                    reject({
+                        status: status.NOT_FOUND,
+                        message: err.message
+                    });
+                } else {
+                    resolve(itemsList);
+                }
+            });
+        });
+    }
+
+    function checkAuthorizedToInvite(me, itemsList) {
+        return new Promise(function (resolve, reject) {
+            try {
+                if (itemsList.collaboratingUsers.indexOf(me._id) >= 0) {
+                    //user is among collaborators
+                    resolve(itemsList);
+                } else {
+                    console.log('You are not authorized to invite users to this list');
+                    reject({
+                        status: status.UNAUTHORIZED,
+                        message: 'You are not authorized to invite users to this list'
+                    });
+                }
+            } catch (err) {
+                console.log(err);
+            }
+        });
+    }
+
+    function checkUserExists(User, userId) {
+        return new Promise(function (resolve, reject) {
+            User.findOne({_id: userId}, function (err, user) {
+                if (err) {
+                    console.log(err.message);
+                    reject({
+                        status: status.INTERNAL_SERVER_ERROR,
+                        message: err.message
+                    });
+                } else {
+                    resolve(user);
+                }
+            });
+        })
+    }
+
+    function checkUserNotYetInvited(userId, itemsList) {
+        return new Promise(function (resolve, reject) {
+            if (itemsList.collaboratingUsers.indexOf(userId) >= 0) {
+                //user is among collaborators
+                console.log('User already has access to list ' + itemsList.name);
+                reject({
+                    status: status.BAD_REQUEST,
+                    message: 'User already has access to list ' + itemsList.name
+                });
+            } else {
+                resolve(itemsList);
+            }
+        });
+    }
 
     /**
      * @swagger
