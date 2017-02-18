@@ -265,8 +265,8 @@ module.exports = function (wagner) {
                     });
                 } else if (!user) {
                     reject({
-                       status: status.NOT_FOUND,
-                       message: 'User not found'
+                        status: status.NOT_FOUND,
+                        message: 'User not found'
                     });
                 } else {
                     resolve(user);
@@ -336,6 +336,30 @@ module.exports = function (wagner) {
             });
         }
     }));
+
+    api.get('/usersByIds', wagner.invoke(function (User) {
+        return function (req, res) {
+            try {
+                let ids = req.query.ids;
+                if (!ids) {
+                    return res.status(status.BAD_REQUEST).json({error: 'Required param ids is missing'});
+                }
+                ids = ids.split(',');
+                console.log('Query for users with ids: ' + ids);
+                const query = {_id: {$in: ids}};
+                User.find(query, function (err, users) {
+                    if (err) {
+                        return internalError(res, 'Cannot get users: ' + err.toString());
+                    } else {
+                        res.send(users);
+                    }
+                });
+            } catch (err) {
+                return internalError(res, 'Cannot get users: ' + err.toString());
+            }
+        }
+    }));
+
 
     /**
      * @swagger
