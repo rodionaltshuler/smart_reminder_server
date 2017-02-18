@@ -223,6 +223,11 @@ module.exports = function (wagner) {
                         status: status.NOT_FOUND,
                         message: err.message
                     });
+                } else if (!itemsList) {
+                    reject({
+                        status: status.NOT_FOUND,
+                        message: 'Items list not found'
+                    });
                 } else {
                     resolve(itemsList);
                 }
@@ -239,7 +244,7 @@ module.exports = function (wagner) {
                 } else {
                     console.log('You are not authorized to invite users to this list');
                     reject({
-                        status: status.UNAUTHORIZED,
+                        status: status.FORBIDDEN,
                         message: 'You are not authorized to invite users to this list'
                     });
                 }
@@ -257,6 +262,11 @@ module.exports = function (wagner) {
                     reject({
                         status: status.INTERNAL_SERVER_ERROR,
                         message: err.message
+                    });
+                } else if (!user) {
+                    reject({
+                       status: status.NOT_FOUND,
+                       message: 'User not found'
                     });
                 } else {
                     resolve(user);
