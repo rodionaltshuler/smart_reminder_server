@@ -48,6 +48,25 @@ module.exports = function (wagner) {
 
     /**
      * @swagger
+     * definition:
+     *    ItemListsWithUsers:
+     *      required:
+     *          [lists]
+     *      properties:
+     *          lists:
+     *              type: array
+     *              items:
+     *                  type: object
+     *                  $ref: '#/definitions/ItemsList'
+     *          users:
+     *              type: array
+     *              items:
+     *                  type: object
+     *                  $ref: '#/definitions/User'
+     */
+
+    /**
+     * @swagger
      * /api/v1/itemLists:
      *   post:
      *     tags:
@@ -167,33 +186,75 @@ module.exports = function (wagner) {
      *         in: header
      *         required: true
      *         type: string
+     *       - name: includeUsers
+     *         description: return users list together with itemLists or not
+     *         in: query
+     *         required: false
+     *         type: boolean
      *     responses:
      *       200:
-     *         description: An array of item lists
-     *         schema: {
-     *           "type": "array",
-     *            "items": {
-     *               "$ref": "#/definitions/ItemsList"
-     *            }
-     *        }
+     *         description: Item lists for particular user and users except current user present in lists
+     *         schema:
+     *               "$ref": "#/definitions/ItemListsWithUsers"
      *       401:
      *         description: Authorization token is missing or invalid
      *       500:
      *         description: Error when getting users from DB
      */
     api.get('/itemLists',
-        wagner.invoke(function (ItemList) {
+        wagner.invoke(function (ItemList, User) {
             return function (req, res) {
                 console.log("Getting item lists for user id = " + req.user._id);
                 let query = {collaboratingUsers: req.user._id};
-                ItemList.find(query, function (error, lists) {
-                    if (error) {
+                getItemLists(ItemList, query)
+                    .then(response => req.query.includeUsers && req.query.includeUsers == 'true' ?
+                        getUsersForItemLists(User, response, req.user._id) : response
+                    )
+                    .then(response => {
+                        res.send(response)
+                    })
+                    .catch(error => {
                         return internalError(res, 'Cannot get item lists: ' + error.toString());
-                    }
-                    res.send(lists);
-                });
+                    });
             }
         }));
+
+    function getItemLists(ItemList, query) {
+        return new Promise(function (resolve, reject) {
+            ItemList.find(query, function (error, lists) {
+                if (error) {
+                    reject(error);
+                } else {
+                    const response = {lists};
+                    resolve(response);
+                }
+            });
+        });
+    }
+
+    function getUsersForItemLists(User, response, myId) {
+        return new Promise(function (resolve, reject) {
+            const userIds = response.lists.reduce((resultSet, itemList) => {
+                    itemList.collaboratingUsers.forEach(userId => {
+                        if (userId != myId) {
+                            resultSet.add(userId);
+                        }
+                    });
+                    return resultSet;
+                },
+                new Set());
+
+            const query = {_id: {$in: Array.from(userIds)}};
+            User.find(query, function (err, users) {
+                if (err) {
+                    reject(err);
+                } else {
+                    response.users = users;
+                    resolve(response);
+                }
+            });
+        });
+    }
 
     function internalError(res, message) {
         return res.status(status.INTERNAL_SERVER_ERROR).json({error: message});
