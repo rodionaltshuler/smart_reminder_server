@@ -1,8 +1,11 @@
 "use strict";
 
-let express = require('express');
-let status = require('http-status');
-let bodyParser = require('body-parser');
+const express = require('express');
+const status = require('http-status');
+const bodyParser = require('body-parser');
+const notificationSender = require('../notifications/notificationSend');
+
+const DELAY_BEFORE_PUSH_MS = 5000;
 
 module.exports = function (wagner) {
 
@@ -178,14 +181,24 @@ module.exports = function (wagner) {
         return function (req, res) {
             const userId = req.params.userId;
             const listId = req.params.listId;
-            //update list by id -> add collaborating users to params
+            let userToInvite;
 
             checkUserExists(User, userId)
-                .then(user => checkItemsListExist(ItemList, listId))
+                .then(user => {
+                    userToInvite = user;
+                    return checkItemsListExist(ItemList, listId)
+                })
                 .then(itemsList => checkAuthorizedToInvite(req.user, itemsList))
                 .then(itemsList => checkUserNotYetInvited(userId, itemsList))
                 .then(itemsList => performInvite(itemsList, userId))
-                .then(itemsList => res.send(itemsList))
+                .then(itemsList => {
+                    res.send(itemsList);
+                    const list = itemsList;
+                    setTimeout(() => {
+                        notificationSender().sendInviteNotification(
+                            req.user, list, userToInvite)
+                    }, DELAY_BEFORE_PUSH_MS);
+                })
                 .catch(error => {
                     console.log(JSON.stringify(error));
                     if (error.status) {
